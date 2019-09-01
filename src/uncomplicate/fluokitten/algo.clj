@@ -1394,3 +1394,102 @@
   (id [_] nil)
   Maybe
   (value [_] nil))
+
+;;; ==================== Identity =========================
+
+(defn identity-fmap
+  ([iv g]
+   (pure iv (g (run iv))))
+  ([iv g ivs]
+   (pure iv (apply g (run iv) (map run ivs)))))
+
+(defn identity-fapply
+  ([iv ig]
+   (fmap iv (run ig)))
+  ([iv ig ivs]
+   (fmap iv (run ig) ivs)))
+
+(defn identity-bind
+  ([iv g]
+   (g (run iv)))
+  ([iv g ivs]
+   (apply g (run iv) (map run ivs))))
+
+(defn identity-join [iiv]
+  (let [v (run iiv)]
+    (if (satisfies? IdentityM v) v iiv)))
+
+(defn identity-foldmap
+  ([x g]
+   (g (run x)))
+  ([x g f init]
+   (f init (g (run x))))
+  ([x g f init y]
+   (f init (g (run x)
+              (run y))))
+  ([x g f init y z]
+   (f init (g (run x)
+              (run y)
+              (run y))))
+  ([x g f init y z w]
+   (f init (g (run x)
+              (run y)
+              (run z)
+              (run w))))
+  ([x g f init y z w ws]
+   (f init (apply g (run x)
+                  (run y)
+                  (run z)
+                  (run w)
+                  (map run ws)))))
+
+(defn identity-fold
+  ([x]
+   (run x))
+  ([x f init]
+   (f init (run x)))
+  ([x f init y]
+   (identity-foldmap x ((op (run x)) (value x) f init y)))
+  ([x f init y z]
+   (identity-foldmap x ((op (run x)) (value x) f init y z)))
+  ([x f init y z w]
+   (identity-foldmap x ((op (run x)) (value x) f init y z w)))
+  ([x f init y z w ws]
+   (identity-foldmap x ((op (run x)) (value x) f init y z w ws))))
+
+(defn identity-op
+  ([] identity)
+  ([x] identity)
+  ([x y & zs]
+   (let [vx (run x)
+         o (op vx)
+         init (let [vy (run y)] (o vx vy))
+         res (transduce (map run) o init zs)]
+     (if (= vx res) x (pure x res)))))
+
+(defn identity-id
+  [iv]
+  (let [v (run iv)]
+    (if (satisfies? Monoid v) (pure iv (id v)))))
+
+(defmacro extend-identity
+  [t identity-pure]
+  `(extend ~t
+     Functor
+     {:fmap identity-fmap}
+     Applicative
+     {:pure ~identity-pure
+      :fapply identity-fapply}
+     Monad
+     {:join identity-join
+      :bind identity-bind}
+     Comonad
+     {:extract run
+      :unbind default-unbind}
+     Foldable
+     {:fold identity-fold
+      :foldmap identity-foldmap}
+     Magma
+     {:op (constantly identity-op)}
+     Monoid
+     {:id identity-id}))

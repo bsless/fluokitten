@@ -525,3 +525,27 @@ run on JVM platform."
   Applicative
   {:pure just-pure
    :fapply nil-fapply})
+
+
+;; Identity
+
+(deftype Identity
+    [a]
+  Object
+  (hashCode [_]
+    (hash a))
+  (equals [this that]
+    (or (identical? this that)
+        (and (instance? Identity that)
+             (= a (run that)))))
+  (toString [_]
+    (format "#identity[%s]" a))
+  IdentityM
+  (run [_]
+    a))
+
+(defn identity-pure
+  [x v]
+  (Identity. v))
+
+(extend-identity Identity identity-pure)

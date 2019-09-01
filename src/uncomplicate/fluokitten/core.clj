@@ -681,3 +681,10 @@ contain the implementations of the protocols, by default jvm.
   "The original function that has been curried."
   [cf]
   (p/uncurry cf))
+
+(def ident
+  ""
+  jvm/->Identity)
+
+(defn run [mv]
+  (p/run mv))

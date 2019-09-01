@@ -321,3 +321,6 @@ code. The client code should call the generic functions from Fluokitten core."
 
 (defprotocol Maybe
   (value [m]))
+
+(defprotocol IdentityM
+  (run [m]))
